@@ -29,7 +29,7 @@ st.set_page_config(page_title="Buscador ICC Adenda 1 DMH", layout="wide")
 st.title("🔍 Buscador de Palabras Clave ICC Adenda DMH")
 
 # Ruta al archivo CSV
-archivo = r'C:\Users\GabrielRaggio\OneDrive - SLR Consulting\Documentos\Automatización PAC\DMH\excels obs\observaciones_adenda_plataforma.csv'
+archivo = 'https://raw.githubusercontent.com/giraggio/dmhplatform/refs/heads/main/observaciones_adenda_plataforma.csv'
 
 # Inputs y estados
 if 'buscar' not in st.session_state:
