@@ -10,11 +10,7 @@ def normalizar(s: str) -> str:
     return unicodedata.normalize("NFKD", s.lower()).encode("ascii", "ignore").decode()
 
 def construir_patron(frase: str) -> re.Pattern:
-    """
-    Crea una expresión regular que:
-    - tolere saltos de línea entre palabras
-    - busque palabras completas (evita coincidencias parciales)
-    """
+    """Crea una expresión regular tolerante a saltos de línea y palabras completas."""
     expr = re.escape(frase.strip())
     expr = expr.replace(r'\ ', r'\s+')
     return re.compile(rf'\b{expr}\b', re.IGNORECASE | re.MULTILINE)
@@ -25,11 +21,16 @@ def tiene_coincidencia(texto: str, patrones: dict) -> list[str]:
 
 # ----------------- Streamlit App -------------------------
 
-st.set_page_config(page_title="Buscador ICC Adenda 1 DMH", layout="wide")
+st.set_page_config(page_title="Buscador ICC Adenda DMH", layout="wide")
 st.title("🔍 Buscador de Palabras Clave ICC Adenda DMH")
 
-# Ruta al archivo CSV
-archivo = 'https://raw.githubusercontent.com/giraggio/dmhplatform/refs/heads/main/observaciones_adenda_plataforma.csv'
+# Selección de base de datos
+bases_disponibles = {
+    "Adenda": 'https://raw.githubusercontent.com/giraggio/dmhplatform/refs/heads/main/observaciones_adenda_plataforma.csv',
+    "Adenda Complementaria": 'https://raw.githubusercontent.com/giraggio/dmhplatform/refs/heads/main/observaciones_adenda_complementaria.csv'
+}
+seleccion_base = st.selectbox("Selecciona la base de datos", list(bases_disponibles.keys()))
+archivo = bases_disponibles[seleccion_base]
 
 # Inputs y estados
 if 'buscar' not in st.session_state:
@@ -43,7 +44,6 @@ palabras_input = st.text_area(
     "arsenico, plomo, metales"
 )
 palabras_clave = [p.strip() for p in palabras_input.split(",") if p.strip()]
-palabras_norm = [normalizar(p) for p in palabras_clave]
 patrones = {p: construir_patron(normalizar(p)) for p in palabras_clave}
 
 # Acción de búsqueda
@@ -53,11 +53,9 @@ if st.button("Buscar"):
     df = pd.read_csv(archivo)
     df["texto_norm"] = df["texto_observacion"].astype(str).apply(normalizar)
 
-    # Detectar coincidencias
     df["coincidencias"] = df["texto_norm"].apply(lambda txt: tiene_coincidencia(txt, patrones))
     df_filtrado = df[df["coincidencias"].str.len() > 0].copy()
 
-    # Crear campo combinaciones únicas para filtrar
     df_filtrado["Palabras Clave (combinadas)"] = df_filtrado["coincidencias"].apply(
         lambda l: ", ".join(sorted(set(l)))
     )
@@ -77,7 +75,6 @@ if st.session_state['buscar']:
         if seleccion != "Todas":
             df_filtrado = df_filtrado[df_filtrado["Palabras Clave (combinadas)"] == seleccion]
 
-        # Explota por coincidencia individual para mostrar
         df_resultados = (
             df_filtrado
             .explode("coincidencias")
